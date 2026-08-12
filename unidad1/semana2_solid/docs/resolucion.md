@@ -57,15 +57,15 @@ classDiagram
         +gestionarTurno(String mensaje) void
     }
 
-    %% Relación 1: Implementación (realization) — las clases concretas satisfacen el contrato de la interfaz
-    Notificacion <|.. EmailNotificacion : <<implementa>>
-    Notificacion <|.. SmsNotificacion : <<implementa>>
-    Notificacion <|.. WhatsappNotificacion : <<implementa>>
-    Notificacion <|.. TelegramNotificacion : <<implementa>>
-    Notificacion <|.. PushNotificacion : <<implementa>>
+    %% Relación 1: Implementación — las clases concretas satisfacen el contrato de la interfaz
+    Notificacion "1" <|.. "N" EmailNotificacion : «implementa»
+    Notificacion "1" <|.. "N" SmsNotificacion : «implementa»
+    Notificacion "1" <|.. "N" WhatsappNotificacion : «implementa»
+    Notificacion "1" <|.. "N" TelegramNotificacion : «implementa»
+    Notificacion "1" <|.. "N" PushNotificacion : «implementa»
 
-    %% Relación 2: Asociación unidireccional (inyección de dependencias vía constructor) — DIP
-    GestorTurnos --> Notificacion : <<inyecta>> 1.1
+    %% Relación 2 y 3: Asociación unidireccional (inyección de dependencias vía constructor) — DIP
+    GestorTurnos "1" --> "1" Notificacion : «create»
 
     %% Relación 3: Dependencia de creación (el gestor requiere una instancia de la abstracción)
     %% (Representada implícitamente por la asociación unidireccional anterior)
@@ -73,7 +73,7 @@ classDiagram
 
 **Leyenda de la notación Mermaid:**
 - `|<..` — **Realization / Implementación**: la clase concreta implementa la interfaz.
-- `-->` — **Association / Asociación unidireccional**: `GestorTurnos` mantiene una referencia a `Notificacion`. La etiqueta `<<inyecta>>` indica que la relación se resuelve mediante inyección de dependencias; la cardinalidad `1.1` indica que cada gestor posee exactamente una notificación.
+- `-->` — **Association / Asociación unidireccional**: `GestorTurnos` mantiene una referencia a `Notificacion`. La etiqueta `«inyecta»` indica que la relación se resuelve mediante inyección de dependencias; la cardinalidad `"1"` a `"1"` indica que cada gestor posee exactamente una notificación.
 
 # Código en Java
 
