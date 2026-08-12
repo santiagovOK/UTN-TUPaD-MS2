@@ -47,7 +47,7 @@ classDiagram
         +gestionarTurno(String mensaje) void
     }
 
-    %% Relación 1: Implementación (realization) — las clases concretas satisfacen el contrato de la interfaz
+    %% Relación 1: Implementación — las clases concretas satisfacen el contrato de la interfaz
     Notificacion <|.. EmailNotificacion : <<implementa>>
     Notificacion <|.. SmsNotificacion : <<implementa>>
     Notificacion <|.. WhatsappNotificacion : <<implementa>>
@@ -60,8 +60,8 @@ classDiagram
 ```
 
 **Leyenda de la notación Mermaid:**
-- `|<..` — **Realization / Implementación**: la clase concreta implementa la interfaz.
-- `-->` — **Association / Asociación unidireccional**: `GestorTurnos` mantiene una referencia a `Notificacion`. La etiqueta `<<inyecta>>` indica que la relación se resuelve mediante inyección de dependencias; la cardinalidad `1.1` indica que cada gestor posee exactamente una notificación.
+- `|<..` — **Implementación**: la clase concreta implementa la interfaz.
+- `-->` — **Asociación unidireccional**: `GestorTurnos` mantiene una referencia a `Notificacion`. La etiqueta `<<inyecta>>` indica que la relación se resuelve mediante inyección de dependencias; la cardinalidad `1.1` indica que cada gestor posee exactamente una notificación.
 
 # Código en Java
 
@@ -139,3 +139,15 @@ public class Main {
     }
 }
 ```
+## Parte C - 
+
+## Parte D — Dependency Inversion Principle (DIP)
+**Cumplido desde el inicio de la Parte B** ✅
+
+El **Principio de Inversión de Dependencias (DIP)** fue aplicado desde el comienzo del rediseño en la Parte B, organizando la aplicación desde un principio con abstracciones. Esto permitió:
+
+- **Estructura modular**: La interfaz `Notificacion` se define primero como punto de abstracción.
+- **Desacoplamiento inicial**: `GestorTurnos` depende exclusivamente de la abstracción, no de implementaciones concretas.
+- **Extensibilidad futura**: Al implementar los nuevos medios de comunicación (Telegram, Push) en las Partes C y D, se solo requieren nuevas implementaciones de `Notificacion` sin modificar `GestorTurnos`.
+
+**Resultado**: La organización desde el inicio con abstracciones facilita la implementación de nuevos canales sin tocar el código existente.

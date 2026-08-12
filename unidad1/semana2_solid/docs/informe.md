@@ -38,4 +38,33 @@ El costo del cambio en este sistema es alto y puede crecer de forma exponencial 
 *   **Aumento del Alcance de Pruebas:** La necesidad de probar la clase completa en lugar de componentes aislados puede aumentar significativamente el esfuerzo de QA y el tiempo de lanzamiento del software.
 
 ---
-*Este diagnóstico sienta la base para la refactorización necesaria en la Parte B.*
+
+## Parte B — Aplicación de Principios SOLID
+
+Se realizó el rediseño del sistema de gestión de turnos aplicando los principios SOLID:
+
+- **SRP**: Cada clase tiene una única responsabilidad. La interfaz `Notificacion` define el contrato, y las clases concretas (`EmailNotificacion`, `SmsNotificacion`, `WhatsappNotificacion`) se encargan de cada tipo de notificación.
+- **OCP**: El sistema está abierto para extensión (nuevos canales) sin modificar el código existente. Se utiliza abstracción mediante la interfaz `Notificacion`.
+- **LSP**: Las implementaciones concretas pueden sustituir a la interfaz sin romper el sistema.
+- **ISP**: La interfaz `Notificacion` es minimalista, evitando sobre-carga de responsabilidades.
+- **DIP**: `GestorTurnos` depende de la abstracción `Notificacion`, no de implementaciones concretas. Se aplica inyección de dependencias por constructor.
+
+**Resultado:** El sistema está desacoplado, extensible y mantenido bajo los principios SOLID.
+
+
+
+
+---
+
+## Parte D — Dependency Inversion Principle (DIP)
+**Cumplido desde el inicio de la Parte B** ✅
+
+El **Principio de Inversión de Dependencias (DIP)** fue aplicado desde el comienzo del rediseño en la Parte B, organizando la aplicación desde un principio con abstracciones. Esto permitió:
+
+- **Estructura modular**: La interfaz `Notificacion` se define primero como punto de abstracción.
+- **Desacoplamiento inicial**: `GestorTurnos` depende exclusivamente de la abstracción, no de implementaciones concretas.
+- **Extensibilidad futura**: Al implementar los nuevos medios de comunicación (Telegram, Push) en las Partes C y D, se solo requieren nuevas implementaciones de `Notificacion` sin modificar `GestorTurnos`.
+
+**Resultado**: La organización desde el inicio con abstracciones facilita la implementación de nuevos canales sin tocar el código existente.
+
+---
