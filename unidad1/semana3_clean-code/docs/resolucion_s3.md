@@ -1,6 +1,6 @@
 # Resolución — Parte A + Parte B: Clean Code y Refactoring Seguro
 
-## Código Base (antes del refactoring)
+## Código Base (antes de la refactorización)
 
 ```java
 import java.util.List;
@@ -39,51 +39,61 @@ public class Facturacion {
 }
 ```
 
+## Interpretación del dominio en función de la descripción del caso
+
+En el contexto del módulo de facturación médica del Hospital Central, el código original utiliza nombres de variables de una sola letra (`p`, `o`, `t`, `e`, `r`) que no tienen significado semántico. Para aplicar los principios de *Clean Code*, es indispensable interpretar la regla de negocio que subyace a estas operaciones matemáticas y traducirlas al lenguaje del dominio médico-administrativo.
+
+De esta manera, el parámetro `e` representa el valor de cada estudio médico facturado y `r` el total acumulado. La condición `p` se interpreta como una bonificación del 50% aplicable si el paciente es profesional de la salud o pertenece al staff (`esProfesional`). Por su parte, la variable `o` determina la aplicación de un 10% de cobertura global cuando el paciente cuenta con obra social (`tieneObraSocial`). Finalmente, `t` hace referencia a un registro histórico (como la `cantidadTurnos` o días internados), donde una cifra mayor a 3 aplica un descuento fijo de 100 unidades sobre el monto final.
+
+## Funcionalidad
+A pesar de los cambios profundos en la estructura del código (extracción de métodos, creación de objetos contenedores y reubicación de responsabilidades), **la funcionalidad original se mantiene intacta**. Esto se debe a que el refactoring aplicado es estrictamente estructural: su objetivo es mejorar la legibilidad, la cohesión y el acoplamiento sin alterar en absoluto las reglas de negocio, el orden de las operaciones ni los resultados finales devueltos por el sistema.
+
 ## Problemas Identificados
 
-| Categoria | Problema | Detalle |
+| Categoría | Problema | Detalle |
 |-----------|----------|---------|
-| Nombres | calc | Sinonimo de "calcular", no indica dominio (facturacion medica) |
-| Nombres | p, o, t | Booleanos/int sin contexto: ¿profesional? ¿obsoleto? ¿turnos? |
+| Nombres | calc | Sinónimo de "calcular", no indica dominio (facturación médica) |
+| Nombres | p, o, t | Booleanos/int sin contexto: ¿profesional? ¿obra social? ¿turnos? |
 | Nombres | r, e | Variables sin significado (resultado, elemento) |
-| Cohesion | 4 responsabilidades en un metodo | Sumar estudios, aplicar descuento profesional, obsolescencia y turno |
+| Cohesión | 4 responsabilidades en un método | Sumar estudios, aplicar descuento profesional, obra social y turno |
 | Legibilidad | Un desarrollador nuevo no entiende nada | Nombres sin sentido del dominio |
-| Errores | Ningun manejo de errores | No valida null ni lista vacia |
-| Acoplamiento | Depende de primitivos genericos | List<Double> en vez de modelo de dominio |
+| Errores | Ningún manejo de errores | No valida null ni lista vacía |
+| Acoplamiento | Depende de primitivos genéricos | List<Double> en vez de modelo de dominio |
 
 ## Estructura del Proyecto Propuesta
 
 ```
 src/
 ├── entities/
-│   ├── Facturacion.java          # Entidad: codigo base original
+│   ├── DatosFacturacion.java     # Entidad: parámetro contenedor
 │   ├── Paciente.java             # Entidad: nombre, esProfesional
-│   ├── EstudioMedico.java        # Entidad: nombre, precio, esObsoleto
+│   ├── EstudioMedico.java        # Entidad: nombre, precio
 │   └── Turno.java                # Entidad: fecha/hora, cantidadTurnos
 └── service/
     └── FacturacionService.java   # Lógica de negocio refactorizada
+├── Main.java                     # Clase principal de ejecución y verificación
 ```
 
-**Justificacion:**
+**Justificación:**
 - `entities` para entidades de dominio (reemplaza `model`)
 - `service` para lógica de negocio
-- Separacion clara entre datos y comportamiento
+- Separación clara entre datos y comportamiento
 - Cada entidad representa un concepto del dominio (paciente, estudio, turno)
 
 ---
 
-## Aplicacion Directa de Refactoring sobre Código Base
+## Aplicación Directa de Refactoring sobre Código Base
 
-### Tecnica 1: Extract Method (Parte A + B)
+### Técnica 1: Extract Method (Parte A + B)
 
-**Aplicacion:** Extraer fragmentos del metodo `calc` como metodos nuevos con nombres descriptivos.
+**Aplicación:** Extraer fragmentos del método `calc` como métodos nuevos con nombres descriptivos.
 
-**Problema que resolvía:** Un solo metodo largo que hacia 4 cosas distintas (sumar estudios, aplicar descuento profesional, aplicar obsolescencia, aplicar turno). Dificultaba la lectura y el mantenimiento.
+**Problema que resolvía:** Un solo metodo largo que hacía 4 cosas distintas (sumar estudios, aplicar descuento profesional, aplicar obra social, aplicar turno). Dificultaba la lectura y el mantenimiento.
 
-**Mejora:** Cada fragmento de codigo se convierte en un metodo con nombre descriptivo, mejorando legibilidad y permitiendo reutilizacion.
+**Mejora:** Cada fragmento de código se convierte en un método con nombre descriptivo, mejorando legibilidad y permitiendo reutilización.
 
 ```java
-// Antes: un solo metodo largo
+// Antes: clase Facturacion, un solo método largo
 public double calc(List<Double> estudios, boolean p, boolean o, int t) {
     double r = 0;
     for (Double e : estudios) {
@@ -102,14 +112,14 @@ public double calc(List<Double> estudios, boolean p, boolean o, int t) {
     return r;
 }
 
-// Despues: metodos extraidos con nombres descriptivos
-public double calcularFacturaTotal(List<EstudioMedico> estudios, boolean esProfesional, boolean esObsoleto, int cantidadTurnos) {
+// Después: clase FacturacionService, métodos extraídos con nombres descriptivos
+public double calcularFacturaTotal(List<EstudioMedico> estudios, boolean esProfesional, boolean tieneObraSocial, int cantidadTurnos) {
     if (estudios == null || estudios.isEmpty()) {
-        throw new IllegalArgumentException("La lista de estudios no puede ser nula ni estar vacia");
+        throw new IllegalArgumentException("La lista de estudios no puede ser nula ni estar vacía");
     }
 
     double subtotal = sumarEstudiosConDescuento(estudios, esProfesional);
-    subtotal = aplicarDescuentoObsoleto(subtotal, esObsoleto);
+    subtotal = aplicarDescuentoObraSocial(subtotal, tieneObraSocial);
     subtotal = aplicarDescuentoTurnos(subtotal, cantidadTurnos);
     return subtotal;
 }
@@ -126,8 +136,8 @@ private double sumarEstudiosConDescuento(List<EstudioMedico> estudios, boolean e
     return resultado;
 }
 
-private double aplicarDescuentoObsoleto(double subtotal, boolean esObsoleto) {
-    if (esObsoleto) {
+private double aplicarDescuentoObraSocial(double subtotal, boolean tieneObraSocial) {
+    if (tieneObraSocial) {
         return subtotal * 0.9;
     }
     return subtotal;
@@ -143,23 +153,23 @@ private double aplicarDescuentoTurnos(double subtotal, int cantidadTurnos) {
 
 ---
 
-### Tecnica 2: Introduce Parameter Object (Parte B)
+### Técnica 2: Introduce Parameter Object (Parte B)
 
-**Aplicacion:** Agrupar los parametros del metodo en un solo objeto contenedor.
+**Aplicación:** Agrupar los parámetros del método en un solo objeto contenedor.
 
-**Problema que resolvía:** El metodo `calcularFacturaTotal` tiene 4 parametros de tipos distintos (`List<Double>`, `boolean`, `boolean`, `int`). Si se agrega otro tipo de descuento o dato, la firma crece indefinidamente. Tambien dificulta la reutilizacion parcial de datos.
+**Problema que resolvía:** El método `calcularFacturaTotal` tiene 4 parámetros de tipos distintos (`List<Double>`, `boolean`, `boolean`, `int`). Si se agrega otro tipo de descuento o dato, la firma crece indefinidamente. También dificulta la reutilización parcial de datos.
 ```java
 
-// Antes: 4 parametros distintos
-public double calcularFacturaTotal(List<EstudioMedico> estudios, boolean esProfesional, boolean esObsoleto, int cantidadTurnos) { ... }
+// Antes: clase Facturacion, método con 4 parámetros distintos
+public double calcularFacturaTotal(List<EstudioMedico> estudios, boolean esProfesional, boolean tieneObraSocial, int cantidadTurnos) { ... }
 
-// Despues: un solo objeto contenedor con nombres descriptivos
+// Después: clase FacturacionService, método con un solo objeto contenedor
 public double calcularFacturaTotal(DatosFacturacion datos) {
     if (datos == null || datos.getEstudios() == null || datos.getEstudios().isEmpty()) {
-        throw new IllegalArgumentException("Los datos de facturacion y la lista de estudios no pueden ser nulos ni estar vacios");
+        throw new IllegalArgumentException("Los datos de facturación y la lista de estudios no pueden ser nulos ni estar vacíos");
     }
     double subtotal = sumarEstudiosConDescuento(datos.getEstudios(), datos.isProfesional());
-    subtotal = aplicarDescuentoObsoleto(subtotal, datos.isObsoleto());
+    subtotal = aplicarDescuentoObraSocial(subtotal, datos.tieneObraSocial());
     subtotal = aplicarDescuentoTurnos(subtotal, datos.getCantidadTurnos());
     return subtotal;
 }
@@ -167,44 +177,44 @@ public double calcularFacturaTotal(DatosFacturacion datos) {
 public class DatosFacturacion {
     private final List<EstudioMedico> estudios;
     private final boolean esProfesional;
-    private final boolean esObsoleto;
+    private final boolean tieneObraSocial;
     private final int cantidadTurnos;
 
-    public DatosFacturacion(List<EstudioMedico> estudios, boolean esProfesional, boolean esObsoleto, int cantidadTurnos) {
+    public DatosFacturacion(List<EstudioMedico> estudios, boolean esProfesional, boolean tieneObraSocial, int cantidadTurnos) {
         this.estudios = estudios;
         this.esProfesional = esProfesional;
-        this.esObsoleto = esObsoleto;
+        this.tieneObraSocial = tieneObraSocial;
         this.cantidadTurnos = cantidadTurnos;
     }
 
     public List<EstudioMedico> getEstudios() { return estudios; }
     public boolean isProfesional() { return esProfesional; }
-    public boolean isObsoleto() { return esObsoleto; }
+    public boolean tieneObraSocial() { return tieneObraSocial; }
     public int getCantidadTurnos() { return cantidadTurnos; }
 }
 ```
 
 ---
 
-### Tecnica 3: Move Method (Parte B)
+### Técnica 3: Move Method (Parte B)
 
-**Aplicacion:** Mover la logica de calculo a una clase dedicada (`FacturacionService`).
+**Aplicación:** Mover la lógica de cálculo a una clase dedicada (`FacturacionService`).
 
-**Problema que resolvía:** La clase `Facturacion` tenia una sola responsabilidad, pero el metodo `calc` hacia varias cosas distintas. Si se agrega nueva funcionalidad relacionada con facturacion, la clase crece sin limite.
+**Problema que resolvía:** La clase `Facturacion` tenía una sola responsabilidad, pero el método `calc` hacía varias cosas distintas y no guardaba estado. Si se agrega nueva funcionalidad relacionada con facturación, la clase crecería sin límite siendo sólo un contenedor de procedimientos.
 
-**Mejora:** Separar la logica de negocio en una clase dedicada, permitiendo extenderla sin afectar otros modulos.
+**Mejora:** Separar la lógica de negocio en una clase dedicada (`FacturacionService`), permitiendo extenderla sin afectar otros módulos. Al carecer de estado propio tras extraer los parámetros, la clase `Facturacion` original quedó vacía y pudo ser eliminada por completo del proyecto, reduciendo código muerto.
 
 ```java
-// Antes: solo en Facturacion
+// Antes: clase Facturacion
 public class Facturacion {
     public double calc(List<Double> estudios, boolean p, boolean o, int t) { ... }
 }
 
-// Despues: mover a FacturacionService
+// Después: clase FacturacionService
 public class FacturacionService {
     public double calcularFacturaTotal(DatosFacturacion datos) { ... }
     private double sumarEstudiosConDescuento(List<EstudioMedico> estudios, boolean esProfesional) { ... }
-    private double aplicarDescuentoObsoleto(double subtotal, boolean esObsoleto) { ... }
+    private double aplicarDescuentoObraSocial(double subtotal, boolean tieneObraSocial) { ... }
     private double aplicarDescuentoTurnos(double subtotal, int cantidadTurnos) { ... }
 }
 
@@ -220,11 +230,11 @@ public class FacturacionService {
 
     public double calcularFacturaTotal(DatosFacturacion datos) {
         if (datos == null || datos.getEstudios() == null || datos.getEstudios().isEmpty()) {
-            throw new IllegalArgumentException("Los datos de facturacion y la lista de estudios no pueden ser nulos ni estar vacios");
+            throw new IllegalArgumentException("Los datos de facturación y la lista de estudios no pueden ser nulos ni estar vacíos");
         }
 
         double subtotal = sumarEstudiosConDescuento(datos.getEstudios(), datos.isProfesional());
-        subtotal = aplicarDescuentoObsoleto(subtotal, datos.isObsoleto());
+        subtotal = aplicarDescuentoObraSocial(subtotal, datos.tieneObraSocial());
         subtotal = aplicarDescuentoTurnos(subtotal, datos.getCantidadTurnos());
 
         return Math.round(subtotal * 100.0) / 100.0;
@@ -242,8 +252,8 @@ public class FacturacionService {
         return resultado;
     }
 
-    private double aplicarDescuentoObsoleto(double subtotal, boolean esObsoleto) {
-        if (esObsoleto) {
+    private double aplicarDescuentoObraSocial(double subtotal, boolean tieneObraSocial) {
+        if (tieneObraSocial) {
             return subtotal * 0.9;
         }
         return subtotal;
@@ -260,26 +270,22 @@ public class FacturacionService {
 public class DatosFacturacion {
     private final List<EstudioMedico> estudios;
     private final boolean esProfesional;
-    private final boolean esObsoleto;
+    private final boolean tieneObraSocial;
     private final int cantidadTurnos;
 
-    public DatosFacturacion(List<EstudioMedico> estudios, boolean esProfesional, boolean esObsoleto, int cantidadTurnos) {
+    public DatosFacturacion(List<EstudioMedico> estudios, boolean esProfesional, boolean tieneObraSocial, int cantidadTurnos) {
         this.estudios = estudios;
         this.esProfesional = esProfesional;
-        this.esObsoleto = esObsoleto;
+        this.tieneObraSocial = tieneObraSocial;
         this.cantidadTurnos = cantidadTurnos;
     }
 
     public List<EstudioMedico> getEstudios() { return estudios; }
     public boolean isProfesional() { return esProfesional; }
-    public boolean isObsoleto() { return esObsoleto; }
+    public boolean tieneObraSocial() { return tieneObraSocial; }
     public int getCantidadTurnos() { return cantidadTurnos; }
 }
 
-// entities/Facturacion.java (codigo base minimizado)
-public class Facturacion {
-    // La clase original se mantiene, pero la logica se mueve a FacturacionService
-}
 
 // entities/Paciente.java
 public class Paciente {
@@ -299,17 +305,14 @@ public class Paciente {
 public class EstudioMedico {
     private final String nombre;
     private final double precio;
-    private final boolean esObsoleto;
 
-    public EstudioMedico(String nombre, double precio, boolean esObsoleto) {
+    public EstudioMedico(String nombre, double precio) {
         this.nombre = nombre;
         this.precio = precio;
-        this.esObsoleto = esObsoleto;
     }
 
     public String getNombre() { return nombre; }
     public double getPrecio() { return precio; }
-    public boolean isObsoleto() { return esObsoleto; }
 }
 
 // entities/Turno.java
@@ -330,8 +333,8 @@ public class Turno {
 
 ## Resumen de Técnicas Aplicadas
 
-| Tecnica | Donde se aplica | Problema resuelto | Mejora |
+| Técnica | Dónde se aplica | Problema resuelto | Mejora |
 |---------|----------------|-------------------|--------|
-| **Extract Method** | Fragmentos de `calc()` | Un solo metodo largo con 4 responsabilidades | Cada fragmento es un metodo con nombre descriptivo |
-| **Introduce Parameter Object** | Firma del metodo publico | 4 parametros distintos, dificil extender | Un solo objeto contenedor, firma limpia |
-| **Move Method** | De `Facturacion` a `FacturacionService` | Clase con una sola responsabilidad pero logica compleja | Logica de negocio en clase dedicada |
+| **Extract Method** | Fragmentos de `calc()` | Un solo metodo largo con 4 responsabilidades | Cada fragmento es un método con nombre descriptivo |
+| **Introduce Parameter Object** | Firma del método publico | 4 parametros distintos, difícil extender | Un solo objeto contenedor, firma limpia |
+| **Move Method** | De `Facturacion` a `FacturacionService` | Clase con una sola responsabilidad pero lógica compleja | Lógica de negocio en clase dedicada; la clase `Facturacion` original fue eliminada por quedar vacía |
