@@ -1,6 +1,10 @@
-# Trabajo Práctico - Unidad 2 (Java - API Rest con Spring Boot )
+# Metodología de sistemas II - Trabajo Práctico - Unidad 1 (semana3) - Clean Code (Java)
 
 Cree un archivo Markdown para la resolución de cada una de las consignas (principalmente para guiarme yo y poder revisar los cambios trabajo por trabajo en el proyecto.). Pueden verlo aquí: [docs/resolucion_s3.md](docs/resolucion_s3.md)
+
+El informe en PDF solicitado está [aquí](docs/informe.pdf)
+
+Pueden ver el repositorio de la asignatura en https://github.com/santiagovOK/UTN-TUPaD-MS2
 
 ---
 
