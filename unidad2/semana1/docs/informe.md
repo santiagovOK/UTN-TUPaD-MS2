@@ -4,7 +4,7 @@
 
 Diagrama UML de clases correspondiente a la situación problemática inicial (antes del refactoring). Este diagrama muestra el acoplamiento directo entre `ReportService` y los distintos reportes concretos (`PDFReport`, `ExcelReport`, `CSVReport`).
 
-👉 **Ver diagrama:** [uml/diagrama_inicial.md](../uml/diagrama_inicial.md)
+**Ver diagrama:** [uml/diagrama_inicial.md](../uml/diagrama_inicial.md)
 
 ---
 
