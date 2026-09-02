@@ -350,7 +350,8 @@ if __name__ == "__main__":
 ```
 
 ## 6. Diagrama UML Final
-👉 **Ver diagrama:** [uml/diagrama_final.md](../uml/diagrama_final.md)
+
+**Ver diagrama:** [uml/diagrama_final.md](../uml/diagrama_final.md)
 
 ## 7. Restricciones
 
