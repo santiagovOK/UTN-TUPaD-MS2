@@ -15,6 +15,8 @@ Lenguaje base para resolver las consignas: **Python**
 - Diagrama UML [inicial](uml/diagrama_inicial.md)
 - Diagrama UML [final / post-refactorizado](uml/diagrama_final.md)
 
+**También en formato `.png `en uml/**
+
 ## Cómo ejecutar el proyecto
 
 Al no poseer dependencias de librerías externas (tal como lo requiere la consigna), no es necesario instalar ningún paquete ni entorno virtual. Solo se requiere tener Python 3 instalado en el sistema.
