@@ -35,7 +35,7 @@ src/
 │   └── html_report.py      # Producto concreto (nuevo, implementa Report))
 ├── factories/
 │   ├── __init__.py
-│   └── report_factory.py   # Creador (Fábrica estática - nuevoç)
+│   └── report_factory.py   # Creador (Fábrica estática - nuevo)
 ├── services/
 │   ├── __init__.py
 │   └── report_service.py   # Servicio agnóstico al formato (refatorización principal) 
@@ -187,3 +187,42 @@ class HTMLReport(Report):
     def get_output(self) -> str:
         return "<html>Contenido HTML</html>"
 ```
+
+### Módulo de fábricas (El Creador)
+
+#### `src/factories/report_factory.py` (Nuevo)
+
+**El Código Original (Antes):**
+No existía para este caso puntual. Toda la lógica de decisión (el gran bloque de `if/else` que evaluaba el string `"pdf"`, `"excel"`, etc.) estaba fuertemente acoplada dentro del método `generate` del `ReportService`.
+
+**El Código Refactorizado (Después):**
+Se extrae esa responsabilidad a este nuevo componente. Ahora, el único lugar que conoce qué clases concretas existen es esta fábrica.
+
+```python
+from src.reports import Report, PDFReport, ExcelReport, CSVReport, HTMLReport
+
+class ReportFactory:
+    
+    @staticmethod
+    def create(format_type: str) -> Report:
+        """
+        Centraliza la decisión de instanciación de los reportes.
+        Si se agrega un formato nuevo, solo se modifica este método.
+        """
+        format_lower = format_type.lower()
+        
+        if format_lower == "pdf":
+            return PDFReport()
+        elif format_lower == "excel":
+            return ExcelReport()
+        elif format_lower == "csv":
+            return CSVReport()
+        elif format_lower == "html":
+            return HTMLReport()
+        else:
+            raise ValueError(f"Formato no soportado: {format_type}")
+```
+
+> **Nota sobre diseño (Java-ismos):** 
+> Aquí se implementa un "java-ismo" estructural de forma adrede para calcar el pseudocódigo (`CLASE ReportFactory: MÉTODO ESTÁTICO create`).
+> En Java, todo debe vivir dentro de una clase, por lo que para agrupar lógica estática se suele hacer una clase como envoltorio. **En Python idiomático, esto no es necesario ni recomendado.** Si una clase no tiene estado (no usa `__init__` ni variables de instancia) y solo tiene un método estático, debería ser simplemente **una función suelta a nivel de módulo** (ej. `def create_report(format_type: str) -> Report:` en `report_factory.py`). Sin embargo, mantuvimos la envoltura de la clase con `@staticmethod` exclusivamente para respetar fielmente la directiva del pseudocódigo de la consigna.
