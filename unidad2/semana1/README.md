@@ -4,8 +4,8 @@ Cree un archivo Markdown para la resolución de cada una de las consignas (princ
 
 Lenguaje base para resolver las consignas: **Python**
 
-- Diagrama UML [inicial](docs/)
-- Diagrama UML [final / post-refactorizado](docs/)
+- Diagrama UML [inicial](docs/diagrama_inicial)
+- Diagrama UML [final / post-refactorizado](docs/diagrama_final)
 
 Pueden ver el repositorio de la asignatura en https://github.com/santiagovOK/UTN-TUPaD-MS2
 
