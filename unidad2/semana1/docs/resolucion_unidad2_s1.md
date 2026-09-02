@@ -224,5 +224,118 @@ class ReportFactory:
 ```
 
 > **Nota sobre diseño (Java-ismos):** 
-> Aquí se implementa un "java-ismo" estructural de forma adrede para calcar el pseudocódigo (`CLASE ReportFactory: MÉTODO ESTÁTICO create`).
-> En Java, todo debe vivir dentro de una clase, por lo que para agrupar lógica estática se suele hacer una clase como envoltorio. **En Python idiomático, esto no es necesario ni recomendado.** Si una clase no tiene estado (no usa `__init__` ni variables de instancia) y solo tiene un método estático, debería ser simplemente **una función suelta a nivel de módulo** (ej. `def create_report(format_type: str) -> Report:` en `report_factory.py`). Sin embargo, mantuvimos la envoltura de la clase con `@staticmethod` exclusivamente para respetar fielmente la directiva del pseudocódigo de la consigna.
+> Aquí se implementa un "java-ismo" estructural de forma adrede para calcar el pseudocódigo (`CLASE ReportFactory: MÉTODO ESTÁTICO create`). Se mantuvo la envoltura de la clase con `@staticmethod` exclusivamente para respetar fielmente la directiva del pseudocódigo de la consigna.
+
+### Módulo de servicios (El Consumidor / Cliente)
+
+#### `src/services/report_service.py` (Refactorización Principal)
+
+**El Código Original (Antes):**
+Este es el código problemático traducido a Python. El servicio está fuertemente acoplado a las implementaciones concretas. Cada vez que haya un formato nuevo (como el HTML), **este código debería modificarse**, violando el principio Abierto/Cerrado ("Open/Closed Principle").
+
+```python
+# Importaciones rígidas y acopladas
+from src.reports.pdf_report import PDFReport
+from src.reports.excel_report import ExcelReport
+from src.reports.csv_report import CSVReport
+from datetime import date
+from typing import Any
+
+class ReportService:
+    
+    def generate(self, data: Any, format_type: str) -> str:
+        # MAL: Decisión de construcción mezclada con lógica de uso
+        format_lower = format_type.lower()
+        if format_lower == "pdf":
+            report = PDFReport()
+        elif format_lower == "excel":
+            report = ExcelReport()
+        elif format_lower == "csv":
+            report = CSVReport()
+        else:
+            raise ValueError("Formato no soportado")
+            
+        # Lógica de uso
+        report.set_data(data)
+        report.add_header("Reporte Mensual")
+        report.add_footer("Generado el " + str(date.today()))
+        report.render()
+        
+        return report.get_output()
+```
+
+**El Código Refactorizado (Después):**
+Se elimina toda la lógica de instanciación delegándola a la `ReportFactory`. Ahora el servicio es completamente agnóstico al formato concreto; solo habla con la interfaz `Report`. 
+Si agregamos el `HTMLReport` los formatos adicionales que se nos puedan ocurrir, **esta clase no se toca más**.
+
+```python
+from datetime import date
+from typing import Any
+from src.factories import ReportFactory
+# Ya no importa PDFReport ni ningún otro directamente.
+
+class ReportService:
+    
+    def generate(self, data: Any, format_type: str) -> str:
+        # BIEN: La decisión de instanciación se delegó a la fábrica
+        report = ReportFactory.create(format_type)
+        
+        # La lógica de uso se mantiene intacta, hablando con la abstracción
+        report.set_data(data)
+        report.add_header("Reporte Mensual")
+        report.add_footer("Generado el " + str(date.today()))
+        report.render()
+        
+        return report.get_output()
+```
+
+> **Nota sobre diseño (Java-ismos):** 
+> Siguiendo lo mencionado en la interfaz `Report`, las llamadas a `report.set_data(data)` y `report.get_output()` dentro de la lógica del servicio se conservaron como métodos tradicionales. En Python idiomático, esto sería `report.data = data` y `return report.output` usando propiedades. La decisión de mantener el paradigma estilo-Java se debe estrictamente a la restricción de la consigna: "La firma pública generate(data, format_type) no puede cambiar" y al intento de hacer coincidir línea por línea la lógica de uso del pseudocódigo proporcionado.
+
+### Punto de entrada (El Cliente Final)
+
+#### `src/main.py` (Nuevo)
+
+Este archivo representa al consumidor final de la aplicación. Aquí es donde se evidencian los beneficios arquitectónico de la refactorización. El cliente puede solicitar el nuevo formato `"html"` requerido por la consigna, y el sistema lo procesa sin que hayamos tenido que modificar el código del `ReportService`.
+
+El cliente solo necesita conocer el servicio. La fábrica y los reportes concretos quedan encapsulados como un detalle de implementación interno del sistema.
+
+```python
+from src.services import ReportService
+
+def main() -> None:
+    # 1. Instanciamos el servicio (único punto de contacto del cliente)
+    servicio = ReportService()
+    
+    # 2. Preparamos datos simulados
+    datos = {
+        "empresa": "UTN",
+        "ingresos": 1500000,
+        "gastos": 800000
+    }
+    
+    print("=== Generando reportes con Factory Method ===\n")
+    
+    try:
+        # Demostración 1: Formato original existente
+        print("Solicitando formato PDF.")
+        output_pdf = servicio.generate(datos, "pdf")
+        print(f"Resultado:\n{output_pdf}\n")
+        
+        # Demostración 2: Nuevo formato
+        # Funciona inmediatamente gracias a que `ReportFactory` lo sabe instanciar.
+        # `ReportService` no tuvo que ser enterado de este cambio.
+        print("Solicitando formato HTML (Nuevo).")
+        output_html = servicio.generate(datos, "html")
+        print(f"Resultado:\n{output_html}\n")
+        
+        # Demostración 3: Comportamiento ante errores
+        print("Solicitando formato inexistente.")
+        servicio.generate(datos, "xml")
+        
+    except ValueError as e:
+        print(f"Error capturado correctamente: {e}")
+
+if __name__ == "__main__":
+    main()
+```
