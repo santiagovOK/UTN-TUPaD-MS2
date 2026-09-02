@@ -1,4 +1,4 @@
-# Resolución Unidad 2 - Semana 1: Estructura en Python
+# Resolución Unidad 2 - Semana 1: Factory Method - Estructura en Python
 
 ## 1. Diagrama UML Inicial
 
@@ -8,7 +8,13 @@ Diagrama UML de clases correspondiente a la situación problemática inicial (an
 
 ---
 
-## 2. Variante Elegida: Static Factory
+## 2. Justificación
+
+El patrón Factory Method resolvió el fuerte acoplamiento (y la violación del principio Abierto/Cerrado) que sufría `ReportService`. Antes, agregar un nuevo formato como `HTMLReport` requería modificar los `if/else` internos del servicio. Al delegar la lógica de "qué clase instanciar" a `ReportFactory`, logramos que el servicio consuma únicamente la interfaz `Report`. Ahora el sistema es escalable, ya que se agregó el formato HTML sin tocar una sola línea de la clase consumidora.
+
+**Nota sobre "Java-ismos":** Se conservaron deliberadamente los patrones de Java del pseudocódigo (*getters/setters* en lugar de `@property`, y clases estáticas sin estado) para acatar la restricción de no alterar la firma pública. Se priorizó la fidelidad absoluta a la consigna por sobre las convenciones idiomáticas de Python enseñadas en la cátedra de Programación 4, dejando constancia de esta decisión.
+
+## 3. Variante Elegida: Static Factory
 
 Para esta refactorización en Python se ha elegido la variante **Static Factory** (también conocida como Simple Factory), siguiendo la solución propuesta en el pseudocódigo original (`ReportFactory` con un método estático `create`).
 
@@ -19,7 +25,7 @@ Se decidió no utilizar esta variante estricta porque la lógica de negocio del 
 
 ---
 
-## 3. Estructura de Archivos
+## 4. Estructura de Archivos
 
 A continuación se presenta la estructura de archivos tentativa para la implementación en Python. En esta etapa solo se definen los esqueletos de las clases y métodos (sin la lógica interna).
 
@@ -46,7 +52,7 @@ El beneficio arquitectónico es que, de ahora en adelante, el `ReportService` no
 
 ---
 
-## 4. Código Refactorizado: Implementación
+## 5. Código Refactorizado: Implementación
 
 A continuación se desarrolla el código de cada componente del patrón. Se intentará evitar también los "java-ismos" que estamos viendo en programación 4, aunque la idea es priorizar una implementación similar a la establecida en "## Pseudocódigo de la solución" dentro de [docs/consignas](/docs/consignas.md)
 
@@ -194,14 +200,17 @@ class HTMLReport(Report):
 
 **El Código Original (Antes):**
 No existía para este caso puntual. Toda la lógica de decisión (el gran bloque de `if/else` que evaluaba el string `"pdf"`, `"excel"`, etc.) estaba fuertemente acoplada dentro del método `generate` del `ReportService`.
-
-**El Código Refactorizado (Después):**
-Se extrae esa responsabilidad a este nuevo componente. Ahora, el único lugar que conoce qué clases concretas existen es esta fábrica.
-
 ```python
 from src.reports import Report, PDFReport, ExcelReport, CSVReport, HTMLReport
 
 class ReportFactory:
+    """
+    ¿Por qué Factory Method y no Abstract Factory?
+    Abstract Factory crea familias de objetos relacionados que deben usarse en 
+    conjunto (ej: BotonWindows + VentanaWindows). En nuestro sistema no hay familias 
+    de objetos, solo existe un único producto (Report) en distintas variantes. 
+    Por lo tanto, Factory Method es el patrón exacto y suficiente para el problema.
+    """
     
     @staticmethod
     def create(format_type: str) -> Report:
@@ -339,3 +348,14 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 ```
+
+## 6. Diagrama UML Final
+👉 **Ver diagrama:** [uml/diagrama_final.md](../uml/diagrama_final.md)
+
+## 7. Restricciones
+
+Se cumplieron estrictamente todas las restricciones impuestas por la consigna:
+- **Sin librerías externas:** Todo el código fue resuelto usando exclusivamente la biblioteca estándar de Python (`abc`, `typing`, `datetime`). No se instalaron dependencias mediante gestores de paquetes.
+- **Firma pública inalterada:** El método principal del servicio, `generate(data, format_type)`, mantuvo su firma y parámetros originales intactos.
+- **Aislamiento del Servicio:** `ReportService` ya no importa ni instancia ninguna clase concreta (ni `PDFReport` ni `HTMLReport`). Su única dependencia es hacia la abstracción (`Report`) y el creador (`ReportFactory`).
+- **Incorporación sin modificaciones:** Se logró incorporar `HTMLReport` modificando únicamente la fábrica, dejando el servicio y la firma sin tocar.

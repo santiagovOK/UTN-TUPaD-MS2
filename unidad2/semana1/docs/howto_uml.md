@@ -178,3 +178,29 @@ PlanoCAD ..|> Exportable : cumple sin saberlo
 | **Dependencia** | ┄┄\> | Objeto usado/creado en método, *no guardado* en atributo | `A ..> B` |
 | **Interfaz (Nominal)** | ┄┄▷ | `ABC` pura + herencia explícita | `Clase ..|> Interfaz` |
 | **Interfaz (Protocol)**| ┄┄▷ | `Protocol`, cumplimiento estructural | `Clase ..|> Interfaz` |
+
+---
+
+## 4. Trucos de Renderizado (Layout) en Mermaid
+
+Los diagramas de clases en Mermaid (`classDiagram`) no permiten posicionar elementos con coordenadas absolutas. El motor gráfico subyacente (Dagre) distribuye los nodos automáticamente basándose casi exclusivamente en la **dirección en la que se escriben las flechas**.
+
+### El truco del Sink Node
+
+A menudo, una Interfaz central o Clase Base (ej. `Report` o `Exportable`) termina renderizándose en el medio del diagrama, rodeada de sus subclases y dependencias, generando un gráfico confuso y superpoblado.
+
+Para forzar al motor a empujar este nodo principal hacia un extremo libre del gráfico (hacia arriba o hacia abajo, aislando la abstracción), **debés invertir la declaración de las relaciones** para que todas las flechas apunten *hacia* esa clase, convirtiéndola visualmente en un "sumidero".
+
+**Código clásico (La abstracción queda atrapada en el medio):**
+```mermaid
+%% Se lee: "Interfaz es implementada por la Clase"
+Interfaz <|.. ClaseConcreta
+```
+
+**Código optimizado para Layout (Aísla la abstracción en un extremo):**
+```mermaid
+%% Se lee: "La Clase implementa la Interfaz"
+ClaseConcreta ..|> Interfaz
+```
+
+Ambas líneas significan exactamente lo mismo en UML (realización), pero la segunda le da la directiva al motor gráfico de empujar el nodo `Interfaz` hacia afuera, limpiando significativamente la legibilidad de arquitecturas con múltiples implementaciones. Lo mismo aplica para la herencia (`Sub --|> Super` en lugar de `Super <|-- Sub`).

@@ -1,3 +1,5 @@
+from src.services import ReportService
+
 def main() -> None:
     # 1. Instanciamos el servicio (único punto de contacto del cliente)
     servicio = ReportService()
