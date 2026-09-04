@@ -7,9 +7,13 @@ El sistema cuenta con más de 40 archivos clientes acoplados a la interfaz de `O
 
 El patrón **Adapter** es la solución adecuada, ya que introduce una capa intermedia que implementa la interfaz esperada por el cliente (`get_location`) y traduce la invocación hacia el nuevo proveedor (`locate`). Esto permite integrar el nuevo servicio de manera transparente sin alterar los 40 archivos existentes ni modificar el código de terceros.
 
-**Nota sobre diseño idiomático en Python:** Siguiendo los lineamientos de la guía de la cátedra de Programación 4 sobre las diferencias entre Java y Python, en Python el polimorfismo no exige herencia estricta gracias al *duck typing* (o al uso de `Protocol`). Sin embargo, se conservó la relación de herencia formal `GeoServiceAdapter(OldGeoService)` para reflejar fielmente la estructura canónica del patrón Adapter de Objetos y el diagrama de clases UML solicitado en la consigna.
+**Nota sobre diseño idiomático y "Java-ismos" (Guía de cátedra):**
+Aunque en Python idiomático se evitarían ciertos patrones heredados de Java, se conservaron conscientemente por las restricciones del trabajo:
+1. **Herencia formal vs. Duck Typing:** Se mantuvo `GeoServiceAdapter(OldGeoService)` para reflejar el diagrama UML de GoF, aun cuando en Python el *duck typing* o un `Protocol` harían innecesaria la herencia.
+2. **Prefijo `get_`:** Proviene del código *legacy/heredado* preexistente; el Adapter existe justamente para convivir con esa firma sin romper los 40 archivos cliente.
+3. **Un archivo por clase:** Se mantuvieron clases separadas en `src/` para evidenciar físicamente la restricción de *"un único archivo nuevo añadido"*, en lugar de consolidar el dominio en un único módulo Python.
 
-Para modelar los objetos de respuesta del nuevo proveedor (`NewGeoProvider`) se aprovechan las facilidades idiomáticas de Python (`dataclasses`), exponiendo atributos directos en lugar del *boilerplate* tradicional de Java.
+*Aclaración sobre `NewGeoProvider`: Al simular el proveedor de terceros (código que es cerrado y permanece inalterado), se utilizó `@dataclass` de la biblioteca estándar como la herramienta nativa adecuada para modelar sus objetos de respuesta con atributos directos, respetando estrictamente la estructura exigida en la consigna sin modificar su contrato.*
 
 ## Estructura de Archivos
 ```text
@@ -33,7 +37,7 @@ Este es el **único archivo de todo el sistema que se refactoriza**. Se decidió
 
 1. **Separación de responsabilidades (*Composition Root*):** Aísla el ensamblado e inyección de dependencias de la lógica de negocio pura (`src/client.py`).
 2. **Fidelidad con la consigna:** Cumple con la premisa de *"un único cambio en toda la app: en un archivo de configuración o fábrica"*, permitiendo contrastar de forma nítida el "Antes" y "Después".
-3. **Transparencia verificable:** Al dejar `src/client.py` 100% intacto, demuestra empíricamente que los 40 archivos de negocio no requieren modificación alguna para operar con el nuevo proveedor.
+3. **Transparencia verificable:** Al dejar `src/client.py` intacto, demuestra empíricamente que los 40 archivos de negocio no requieren modificación alguna para operar con el nuevo proveedor.
 4. **Punto de ejecución:** Permite ejecutar la simulación directamente con `python main.py` y verificar la salida por consola.
 
 #### Antes (como sería `main.py` con `OldGeoService`)
@@ -71,7 +75,7 @@ if __name__ == "__main__":
     main()
 ```
 
-> **Nota sobre el contraste:** Como se evidencia en el bloque anterior, el código cliente (`run_business_logic`, representativo de los 40 archivos) no sufre ningún cambio. Sigue interactuando contra la interfaz esperada (`get_location(ip)`) y recibiendo la estructura de datos habitual (`dict` con `lat`, `lng`, `city`, `country`), validando el principio Open/Closed.
+> **Nota sobre el contraste (transparencia):** Como se evidencia en el bloque anterior, el código cliente (`run_business_logic`, representativo de los 40 archivos) no sufre ningún cambio. Sigue interactuando contra la interfaz esperada (`get_location(ip)`) y recibiendo la estructura de datos habitual (`dict` con `lat`, `lng`, `city`, `country`), validando el principio Open/Closed.
 
 ### 2. La nueva clase adaptadora (`src/geo_service_adapter.py`)
 
@@ -128,6 +132,18 @@ Si mañana se decide incorporar un tercer proveedor (`FutureGeoProvider` / `Thir
      ```
 
 Esta independencia demuestra el verdadero poder del patrón: **el riesgo de regresión en los 40 archivos del sistema es cero**, confinando todo el impacto de los cambios de infraestructura externa en la capa adaptadora.
+
+---
+
+## Restricciones
+
+Se respetaron rigurosamente todas las restricciones operativas y arquitectónicas impuestas en la consigna:
+
+1. **Sin librerías externas:** La solución se implementó utilizando exclusivamente características nativas de Python (`typing` y `dataclasses` de la biblioteca estándar). No se instalaron ni utilizaron paquetes de terceros.
+2. **Un único archivo nuevo:** La resolución del patrón se encapsuló íntegramente en un solo archivo nuevo: `src/geo_service_adapter.py`.
+3. **Firma pública inalterada:** El método `get_location(self, ip: str) -> dict[str, Any]` conserva con total exactitud el nombre, los parámetros y el tipo de estructura de retorno esperados por el cliente.
+4. **Código existente cerrado a modificaciones:** Ni `OldGeoService` ni `NewGeoProvider` sufrieron cambios en su código. La lógica de negocio de los 40 archivos cliente (`src/client.py`) se mantuvo intacta. El único cambio en toda la aplicación fue la instanciación en el archivo de configuración (`main.py`).
+
 
 
 
