@@ -15,6 +15,24 @@ Aunque en Python idiomático se evitarían ciertos patrones heredados de Java, s
 
 *Aclaración sobre `NewGeoProvider`: Al simular el proveedor de terceros (código que es cerrado y permanece inalterado), se utilizó `@dataclass` de la biblioteca estándar como la herramienta nativa adecuada para modelar sus objetos de respuesta con atributos directos, respetando estrictamente la estructura exigida en la consigna sin modificar su contrato.*
 
+## Roles GoF y Variante de Implementación
+
+### 1. Mapeo de Roles según la Teoría de GoF
+
+| Rol GoF | Componente en el Proyecto | Responsabilidad en la Solución |
+| :--- | :--- | :--- |
+| **Cliente (*Client*)** | `src/client.py` (`run_business_logic`) | Representa los 40 archivos de lógica de negocio que consumen el servicio de geolocalización. |
+| **Interfaz / Objetivo (*Target*)** | `src/old_geo_service.py` (`OldGeoService`) | Define el contrato y protocolo que el cliente sabe utilizar (`get_location(ip) -> dict`). |
+| **Servicio Incompatible (*Adaptee*)** | `src/new_geo_provider.py` (`NewGeoProvider`) | Proveedor de terceros que posee la funcionalidad requerida pero con una interfaz incompatible (`locate(ip) -> LocationResponse`). |
+| **Adaptador (*Adapter*)** | `src/geo_service_adapter.py` (`GeoServiceAdapter`) | Conecta ambos mundos: hereda de *Target* para cumplir el contrato del cliente y envuelve a *Adaptee* para traducir sus llamadas y estructuras de datos. |
+
+### 2. Variante de Implementación: Adaptador de Objetos
+
+La teoría de GoF distingue dos variantes para este patrón:
+- **Clase Adaptadora (Herencia Múltiple):** El adaptador hereda de *Target* y de *Adaptee* simultáneamente. Aunque Python soporta herencia múltiple, esta variante acopla rígidamente el adaptador a la implementación concreta del proveedor de terceros en tiempo de definición.
+- **Adaptador de Objetos (Composición):** Se adoptó esta variante. El adaptador implementa la interfaz esperada y compone una instancia de `NewGeoProvider` en su atributo `#_provider`. Esto respeta el principio central de GoF: *"Favorecer la composición de objetos por sobre la herencia de clases"*, permitiendo sustituir o extender el proveedor con mínimo acoplamiento.
+
+
 ## Estructura de Archivos
 ```text
 .
@@ -105,9 +123,9 @@ class GeoServiceAdapter(OldGeoService):
         Delega la consulta al nuevo proveedor y traduce su respuesta de objetos anidados
         hacia el formato de diccionario plano que consumen los 40 archivos cliente.
         """
-        resultado = self._provider.locate(ip)
+        resultado = self._provider.locate(ip) # Acá se delega
 
-        # Traducción y normalización estructural de datos
+        # Traducción y normalización estructural de datos (gracias al nuevo proveedor)
         return {
             "lat": resultado.coordinates.latitude,
             "lng": resultado.coordinates.longitude,
