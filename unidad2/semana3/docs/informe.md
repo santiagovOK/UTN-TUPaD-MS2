@@ -6,7 +6,23 @@
 
 ### 1. Mapeo de Roles según la Teoría de GoF
 
+La estructura canónica del patrón identifica tres roles principales según se detalla en `docs/consignas.md`:
+
+| Rol GoF | Componente en el Proyecto | Responsabilidad en la Solución |
+| :--- | :--- | :--- |
+| **Notificador** | `src/inventory_manager.py` (`InventoryManager`) | Envía eventos de interés a otros objetos. Mantiene el campo de suscriptores (`#_observers`) y los métodos `subscribe`, `unsubscribe` y `_notify`. En este ejercicio, juega el rol de Notificador. |
+| **Interfaz Suscriptora** | `src/stock_observer.py` (`StockObserver`) | Declara la interfaz de notificación común con el método `on_low_stock(product_id: str, quantity: int) -> None`. |
+| **Suscriptores Concretos** | `EmailAlertObserver`, `AnalyticsObserver`, `ReplenishObserver` | Realizan acciones en respuesta a las notificaciones (`on_low_stock`), implementando la misma interfaz para que el notificador no esté acoplado a clases concretas. |
+
 ### 2. Variante de Implementación: Observador por Suscripción
+
+La teoría tradicional de GoF propone típicamente una interfaz nominal o clase abstracta (`ABC` con `@abstractmethod` en el caso de Python) que obliga a las subclases a heredar explícitamente.
+
+En este proyecto se adoptó la variante de **Tipado Estructural mediante `typing.Protocol`** (Python idiomático), conforme a los lineamientos de `docs/guias/javaismos_guia.md` (Capítulo 6: *Protocol: el contrato sin el acoplamiento*):
+
+1. **Contrato sin acoplamiento de herencia:** Cualquier clase que implemente el método `on_low_stock(self, product_id: str, quantity: int) -> None` satisface el protocolo automáticamente (*duck typing* verificable estáticamente), sin necesidad de acoplarse nominalmente a una superclase compartida ni cargar peso muerto en la jerarquía.
+2. **Modelo de Agregación:** Siguiendo `docs/guias/howto_uml.md`, la relación entre `InventoryManager` y los observadores es de **Agregación (`o--`)**, ya que los suscriptores se crean externamente y se inyectan dinámicamente mediante `subscribe()`, preservando ciclos de vida independientes.
+3. **Aislamiento de fallos (*Fail-Safe Loop*):** La notificación se procesa de forma síncrona en un único hilo, pero encapsulando cada llamada en un bloque `try/except Exception` individual dentro del bucle. Esto garantiza que un observador defectuoso no afecte la continuidad del negocio.
 
 ## Estructura de Archivos
 > **Aclaración sobre organización y java-ismos:** La refactorización se presenta en varios archivos `.py`, aproximadamente uno por componente del patrón. En Python no es idiomático separar cada clase en su propio módulo. Un archivo puede agrupar las clases que tengan sentido cohesivo. Se conserva conscientemente esta organización por fidelidad a la consigna y para hacer visibles, con claridad, los roles y las colaboraciones del patrón Observer. No representa una recomendación general de estructura para proyectos Python.
@@ -42,9 +58,6 @@
    - `src/analytics_observer.py`: Adapta el panel analítico original (`AnalyticsDashboard`) para responder al evento uniforme de notificación.
    - `src/replenish_observer.py`: Adapta el módulo de reposición automática (`AutoReplenishment`) para desacoplar su invocación del gestor de stock.
    - `main.py`: Se reestructura como *Composition Root*, desacoplando la instanciación de dependencias de la lógica de negocio y ejecutando las pruebas de resiliencia y extensibilidad.
-
-3. **Archivos que quedan igual (`Queda igual`):**
-   - Documentación de consignas y guías teóricas de consulta (`docs/consignas.md`, `docs/requerimientos.md`, `docs/guias/`).
 
 ## Diagramas UML
 
