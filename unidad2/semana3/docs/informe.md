@@ -9,6 +9,8 @@
 ### 2. Variante de Implementación: Observador por Suscripción
 
 ## Estructura de Archivos
+> **Aclaración sobre organización y java-ismos:** La refactorización se presenta en varios archivos `.py`, aproximadamente uno por componente del patrón. En Python no es idiomático separar cada clase en su propio módulo. Un archivo puede agrupar las clases que tengan sentido cohesivo. Se conserva conscientemente esta organización por fidelidad a la consigna y para hacer visibles, con claridad, los roles y las colaboraciones del patrón Observer. No representa una recomendación general de estructura para proyectos Python.
+
 ```text
 .
 ├── main.py                             # (Refactorizado) Punto de entrada y Composition Root: ensambla observadores y ejecuta la simulación integral.
@@ -47,6 +49,10 @@
 ## Diagramas UML
 
 ### 1. Situación inicial: `InventoryManager` acoplado
+**Ver diagrama:** [uml/diagrama_inicial.md](../uml/diagrama_inicial.md)
+
+El estado inicial concentra en `InventoryManager` la creación y el uso directo de `EmailAlertService`, `AnalyticsDashboard` y `AutoReplenishment`. Cada relación es una composición: incorporar o cambiar un canal de notificación obliga a editar el gestor, que es precisamente el acoplamiento que resolverá Observer.
+
 
 ### 2. Solución refactorizada: Observer
 
