@@ -73,12 +73,127 @@ El estado inicial concentra en `InventoryManager` la creación y el uso directo 
 
 ### `InventoryManager` con dependencias concretas
 
+El diseño inicial acoplaba directamente el gestor de inventario con las implementaciones específicas de los servicios de notificación:
+
+```python
+# Situación inicial problemática: dependencias rígidas en InventoryManager
+class InventoryManager:
+    def __init__(self) -> None:
+        # Acoplamiento directo a servicios concretos
+        self.email_service = EmailAlertService()
+        self.analytics = AnalyticsDashboard()
+        self.replenishment = AutoReplenishment()
+        self.stock: dict[str, int] = {}
+
+    def update_stock(self, product_id: str, quantity: int) -> None:
+        self.stock[product_id] = quantity
+        if quantity < 10:
+            # Invocación directa a cada servicio concreto
+            self.email_service.send_low_stock_alert(product_id, quantity)
+            self.analytics.record_low_stock_event(product_id)
+            self.replenishment.trigger_order(product_id, 100)
+
+    def sell_product(self, product_id: str, sold: int) -> None:
+        self.stock[product_id] -= sold
+        if self.stock[product_id] < 10:
+            # Duplicación de lógica y dependencias rígidas
+            self.email_service.send_low_stock_alert(product_id, self.stock[product_id])
+            self.analytics.record_low_stock_event(product_id)
+            self.replenishment.trigger_order(product_id, 100)
+```
+
 ## Código Refactorizado: Implementación
 
 ### 1. Interfaz `StockObserver`
 
+Contrato estructural definido mediante `typing.Protocol` que desacopla el notificador de los observadores concretos:
+
+```python
+# src/stock_observer.py
+from typing import Protocol
+
+
+class StockObserver(Protocol):
+    """
+    Protocolo estructural que define la interfaz suscriptora común (GoF).
+    Cualquier observador debe implementar este método para recibir notificaciones
+    de eventos de stock bajo.
+    """
+
+    def on_low_stock(self, product_id: str, quantity: int) -> None:
+        """
+        Método de notificación invocado cuando el stock de un producto cae por debajo del umbral.
+
+        :param product_id: Identificador del producto.
+        :param quantity: Cantidad actual de stock restante.
+        """
+        ...
+```
+
 ### 2. Observadores concretos
 
+Cada servicio implementa el método `on_low_stock` satisfaciendo el protocolo `StockObserver` de forma puramente estructural (sin necesidad de importar ni heredar explícitamente de `StockObserver`, eliminando el acoplamiento nominal):
+```python
+# src/email_alert_observer.py
+class EmailAlertObserver:
+    """
+    Suscriptor concreto de alertas por email.
+    Implementa el protocolo StockObserver.
+    """
+
+    def on_low_stock(self, product_id: str, quantity: int) -> None:
+        print(f"Alerta Email: Stock bajo para {product_id} ({quantity} unidades)")
+```
+
+```python
+# src/analytics_observer.py
+class AnalyticsObserver:
+    """
+    Suscriptor concreto de métricas y analítica.
+    Implementa el protocolo StockObserver.
+    """
+
+    def on_low_stock(self, product_id: str, quantity: int) -> None:
+        print(f"Analytics: Evento registrado para {product_id}")
+```
+
+```python
+# src/replenish_observer.py
+class ReplenishObserver:
+    """
+    Suscriptor concreto de reposición automática.
+    Implementa el protocolo StockObserver.
+    """
+
+    def on_low_stock(self, product_id: str, quantity: int) -> None:
+        print(f"Reposición: Orden emitida por 100 unidades para {product_id}")
+```
+
+```python
+# src/push_notification_observer.py
+class PushNotificationObserver:
+    """
+    Suscriptor concreto de notificaciones push.
+    Demuestra la extensibilidad del sistema (Open/Closed Principle)
+    sin requerir modificaciones en InventoryManager.
+    """
+
+    def on_low_stock(self, product_id: str, quantity: int) -> None:
+        print(f"Push: Notificación enviada al móvil para {product_id}")
+```
+
+```python
+# src/broken_observer.py
+class BrokenObserver:
+    """
+    Suscriptor concreto para prueba de resiliencia ante fallos.
+    Lanza intencionalmente un error para comprobar que el bucle
+    de notificación del notificador no se detiene.
+    """
+
+    def on_low_stock(self, product_id: str, quantity: int) -> None:
+        raise RuntimeError("error de red simulado")
+```
 ### 3. `InventoryManager` como notificador
 
 ### 4. Configuración y ejecución
