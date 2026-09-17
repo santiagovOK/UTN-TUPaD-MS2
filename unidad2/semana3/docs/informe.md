@@ -21,15 +21,15 @@ La teoría tradicional de GoF propone típicamente una interfaz nominal o clase 
 En este proyecto se adoptó la variante de **Tipado Estructural mediante `typing.Protocol`** (Python idiomático), conforme a los lineamientos de `docs/guias/javaismos_guia.md` (Capítulo 6: *Protocol: el contrato sin el acoplamiento*):
 
 1. **Contrato sin acoplamiento de herencia:** Cualquier clase que implemente el método `on_low_stock(self, product_id: str, quantity: int) -> None` satisface el protocolo automáticamente (*duck typing* verificable estáticamente), sin necesidad de acoplarse nominalmente a una superclase compartida ni cargar peso muerto en la jerarquía.
-2. **Modelo de Agregación:** Siguiendo `docs/guias/howto_uml.md`, la relación entre `InventoryManager` y los observadores es de **Agregación (`o--`)**, ya que los suscriptores se crean externamente y se inyectan dinámicamente mediante `subscribe()`, preservando ciclos de vida independientes.
-3. **Aislamiento de fallos (*Fail-Safe Loop*):** La notificación se procesa de forma síncrona en un único hilo, pero encapsulando cada llamada en un bloque `try/except Exception` individual dentro del bucle. Esto garantiza que un observador defectuoso no afecte la continuidad del negocio.
+2. **Modelo de Agregación:** Siguiendo `docs/guias/howto_uml.md`, la relación entre `InventoryManager` y los observadores es de **Agregación (`o--`)**, ya que los suscriptores se crean externamente y se registran dinámicamente mediante `subscribe()`, preservando ciclos de vida independientes.
+3. **Manejo de errores dentro del bucle:** La notificación se procesa de forma síncrona en un único hilo, pero encapsulando cada llamada en un bloque `try/except Exception` individual dentro del bucle. Esto garantiza que un observador defectuoso no detenga la notificación del resto.
 
 ## Estructura de Archivos
 > **Aclaración sobre organización y java-ismos:** La refactorización se presenta en varios archivos `.py`, aproximadamente uno por componente del patrón. En Python no es idiomático separar cada clase en su propio módulo. Un archivo puede agrupar las clases que tengan sentido cohesivo. Se conserva conscientemente esta organización por fidelidad a la consigna y para hacer visibles, con claridad, los roles y las colaboraciones del patrón Observer. No representa una recomendación general de estructura para proyectos Python.
 
 ```text
 .
-├── main.py                             # (Refactorizado) Punto de entrada y Composition Root: ensambla observadores y ejecuta la simulación integral.
+├── main.py                             # (Refactorizado) Punto de entrada y código de prueba: ensambla observadores y ejecuta la simulación integral.
 ├── docs/
 │   ├── consignas.md                    # (Queda igual) Enunciado original y restricciones del trabajo práctico.
 │   ├── requerimientos.md               
@@ -41,7 +41,7 @@ En este proyecto se adoptó la variante de **Tipado Estructural mediante `typing
     ├── email_alert_observer.py         # (Refactorizado) Suscriptor concreto de alertas por email (reemplaza al acoplamiento directo de EmailAlertService).
     ├── analytics_observer.py           # (Refactorizado) Suscriptor concreto de métricas (reemplaza al acoplamiento directo de AnalyticsDashboard).
     ├── replenish_observer.py           # (Refactorizado) Suscriptor concreto de reposición automática (reemplaza al acoplamiento directo de AutoReplenishment).
-    ├── push_notification_observer.py   # (Nuevo) Suscriptor de extensión para demostrar principio Open/Closed sin tocar el gestor.
+    ├── push_notification_observer.py   # (Nuevo) Suscriptor de extensión para demostrar que el sistema es extensible sin tocar el manager.
     └── broken_observer.py              # (Nuevo) Suscriptor de prueba con fallo simulado para validar resiliencia del bucle de notificación.
 ```
 
@@ -49,7 +49,7 @@ En este proyecto se adoptó la variante de **Tipado Estructural mediante `typing
 
 1. **Archivos nuevos (`Nuevo`):**
    - `src/stock_observer.py`: Define el contrato abstracto (`typing.Protocol`) con el método `on_low_stock(product_id, quantity)`. No existía en el diseño original y es el elemento clave que rompe el acoplamiento.
-   - `src/push_notification_observer.py`: Suscriptor adicional creado para demostrar el principio Open/Closed (permite agregar nuevos canales sin alterar `InventoryManager`).
+   - `src/push_notification_observer.py`: Suscriptor adicional creado para demostrar que el sistema es extensible sin tocar el manager (permite agregar nuevos canales sin alterar `InventoryManager`).
    - `src/broken_observer.py`: Suscriptor de prueba con excepción intencional (`"error de red simulado"`) para verificar el aislamiento de fallos dentro del bucle de notificación.
 
 2. **Archivos modificados / refactorizados (`Modificado` / `Refactorizado`):**
@@ -57,7 +57,7 @@ En este proyecto se adoptó la variante de **Tipado Estructural mediante `typing
    - `src/email_alert_observer.py`: Adapta el servicio de alertas por correo original (`EmailAlertService`) para implementar el método estándar `on_low_stock`.
    - `src/analytics_observer.py`: Adapta el panel analítico original (`AnalyticsDashboard`) para responder al evento uniforme de notificación.
    - `src/replenish_observer.py`: Adapta el módulo de reposición automática (`AutoReplenishment`) para desacoplar su invocación del gestor de stock.
-   - `main.py`: Se reestructura como *Composition Root*, desacoplando la instanciación de dependencias de la lógica de negocio y ejecutando las pruebas de resiliencia y extensibilidad.
+   - `main.py`: Se reestructura como código de prueba, configurando y suscribiendo los observadores para ejecutar las pruebas de resiliencia y extensibilidad.
 
 ## Diagramas UML
 
@@ -174,8 +174,8 @@ class ReplenishObserver:
 class PushNotificationObserver:
     """
     Suscriptor concreto de notificaciones push.
-    Demuestra la extensibilidad del sistema (Open/Closed Principle)
-    sin requerir modificaciones en InventoryManager.
+    Demuestra que el sistema es extensible sin tocar el InventoryManager
+    ni requerir herencia nominal.
     """
 
     def on_low_stock(self, product_id: str, quantity: int) -> None:
@@ -199,9 +199,8 @@ class BrokenObserver:
 En el diseño refactorizado ("Después"), `InventoryManager` elimina por completo las dependencias rígidas hacia clases concretas de servicios. Ya no instancia ni invoca directamente a `EmailAlertService`, `AnalyticsDashboard` o `AutoReplenishment`. En su lugar:
 
 - Administra dinámicamente una colección de observadores a través de `subscribe()` y `unsubscribe()`, conociendo únicamente el protocolo abstracto `StockObserver`.
-- Centraliza la emisión de alertas en el método privado `_notify()`, el cual implementa un bucle a prueba de fallos (*fail-safe loop*) mediante `try/except` individual para garantizar que un suscriptor defectuoso o que arroje excepciones no interrumpa la notificación al resto.
-- Los métodos de negocio `update_stock()` y `sell_product()` gestionan el estado del stock interno y, al cruzar el umbral crítico (`< 10`), delegan la notificación a `_notify()` sin duplicación de lógica ni acoplamiento hacia canales específicos, satisfaciendo plenamente el principio de Abierto/Cerrado (OCP).
-
+- Centraliza la emisión de alertas en el método privado `_notify()`, el cual envuelve cada llamada en un bloque `try/except` individual dentro del bucle para garantizar que un observador que falle no corte toda la cadena ni detenga a los demás.
+- Los métodos de negocio `update_stock()` y `sell_product()` gestionan el estado del stock interno y, al cruzar el umbral crítico (`< 10`), delegan la notificación a `_notify()` sin duplicación de lógica ni acoplamiento hacia servicios específicos, demostrando que el sistema es extensible sin tocar el manager.
 > **Preservación de `sell_product` y no regresión:**  
 > Si bien la sección *"Pseudocódigo de la solución"* de `docs/consignas.md` solo ilustra `update_stock` para sintetizar didácticamente la mecánica del patrón, `sell_product` forma parte fundamental del código original preexistente (*"El código problemático"*, líneas 60–70). En una refactorización real de software legado no deben destruirse funcionalidades de negocio; por ende, se preserva y refactoriza para reutilizar limpiamente el método centralizado `_notify()`, eliminando las dependencias rígidas y la duplicación de código previa.
 
@@ -242,7 +241,7 @@ class InventoryManager:
     def _notify(self, product_id: str, quantity: int) -> None:
         """
         Notifica síncronamente a todos los observadores registrados.
-        Aislamiento de fallos (Fail-Safe Loop):
+        Manejo de errores dentro del bucle:
         El bloque try/except envuelve cada llamada individual dentro del bucle
         para que un observador defectuoso no detenga la notificación del resto.
         """
@@ -280,10 +279,44 @@ class InventoryManager:
         if new_quantity < 10:
             self._notify(product_id, new_quantity)
 ```
-### 4. Configuración y ejecución
+### 4. Código de prueba — configuración y ejecución
+
+El archivo `main.py` implementa el código de prueba requerido por la consigna ("4. Código de prueba — el observer que falla"). En este archivo se instancian los observadores concretos y se registran en `InventoryManager` mediante `subscribe()` antes de ejecutar las operaciones de actualización de stock.
 
 ## Prueba de resiliencia: observador que falla
 
+La consigna establece como requisito mandatorio:
+> *"Demostrá en código que un observer que falla no detiene a los demás. [...] El test del observer roto es obligatorio en la entrega."* (`docs/consignas.md`, líneas 200 y 202).
+
+En `main.py`, la prueba se materializa suscribiendo un `BrokenObserver` intercalado entre los observadores estándar:
+1. `EmailAlertObserver`
+2. `AnalyticsObserver`
+3. `BrokenObserver` (lanza `RuntimeError("error de red simulado")`)
+4. `ReplenishObserver`
+5. `PushNotificationObserver`
+
+Al invocar `manager.update_stock("PROD-001", 5)`, la ejecución evidencia que:
+- Los dos primeros observadores procesan la alerta exitosamente emitiendo sus correspondientes salidas.
+- Al llegar al tercer observador, este arroja la excepción simulada. Gracias al manejo de errores dentro del loop envolviendo cada llamada individual en un bloque `try/except Exception` dentro de `InventoryManager._notify()`, la falla es capturada y registrada mediante `logging.error` sin propagarse hacia el invocador ni interrumpir el bucle.
+- La iteración continúa inmediatamente, notificando con total normalidad a `ReplenishObserver` y `PushNotificationObserver`.
+
 ## Extensibilidad: nuevo observador sin modificar el manager
 
+La consigna solicita:
+> *"Agregá un observador nuevo (puede ser push, SMS, lo que quieras) para demostrar que el sistema es extensible sin tocar el manager."*
+
+Para cumplir esta directiva se incorporó `PushNotificationObserver` (`src/push_notification_observer.py`):
+1. **Extensibilidad sin tocar el manager:** Se incorpora un canal móvil (push) demostrando que el sistema es extensible sin tocar el `InventoryManager` ni alterar el código existente.
+2. **Tipado Estructural (`typing.Protocol`):** `PushNotificationObserver` no hereda de ninguna clase base ni importa a `InventoryManager`; simplemente implementa el método `on_low_stock(self, product_id: str, quantity: int) -> None`.
+3. **Gestión Dinámica (`unsubscribe`):** `main.py` demuestra además que el ciclo de vida es completamente dinámico: al llamar `manager.unsubscribe(push_obs)`, el observador deja de recibir notificaciones en eventos subsiguientes (`PROD-002`), sin reiniciar el sistema ni afectar al resto de los suscriptores.
+
 ## Restricciones
+
+Se verificó el cumplimiento estricto de todas las restricciones estipuladas en `docs/consignas.md`:
+
+| Restricción en Consigna | Estado | Justificación / Evidencia Técnica |
+| :--- | :--- | :--- |
+| **Sin librerías externas** (líneas 15, 27, 225) | **Cumplido** | Se utilizó exclusivamente la biblioteca estándar de Python (`typing.Protocol` para tipado estructural y `logging` para el registro de errores). No se requiere ningún paquete externo (`pip freeze` limpio). |
+| **Sin threads ni procesos adicionales** (línea 202) | **Cumplido** | Toda la lógica de notificación es 100% síncrona y secuencial en un único hilo de ejecución, tal como solicita la consigna. |
+| **El manager no conoce nombres concretos** (línea 200) | **Cumplido** | `InventoryManager` únicamente referencia el protocolo genérico `StockObserver`. No contiene mención, importación ni instanciación de servicios concretos. |
+| **Test del observer roto obligatorio** (líneas 202, 217) | **Cumplido** | Integrado y ejecutable en `main.py` con `BrokenObserver`, verificando empíricamente el aislamiento de fallos en consola. |

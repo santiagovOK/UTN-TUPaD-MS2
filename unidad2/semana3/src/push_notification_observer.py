@@ -3,8 +3,8 @@
 class PushNotificationObserver:
     """
     Suscriptor concreto de notificaciones push.
-    Demuestra la extensibilidad del sistema (Open/Closed Principle)
-    sin requerir modificaciones en InventoryManager ni herencia nominal.
+    Demuestra que el sistema es extensible sin tocar el InventoryManager
+    ni requerir herencia nominal.
     """
 
     def on_low_stock(self, product_id: str, quantity: int) -> None:

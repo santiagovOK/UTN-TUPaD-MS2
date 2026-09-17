@@ -33,7 +33,7 @@ class InventoryManager:
     def _notify(self, product_id: str, quantity: int) -> None:
         """
         Notifica síncronamente a todos los observadores registrados.
-        Aislamiento de fallos (Fail-Safe Loop):
+        Manejo de errores dentro del bucle:
         El bloque try/except envuelve cada llamada individual dentro del bucle
         para que un observador defectuoso no detenga la notificación del resto.
         """
@@ -65,6 +65,7 @@ class InventoryManager:
         Evita valores negativos de stock.
         Si el stock resultante es menor a 10 unidades, notifica a los observadores.
         """
+        current_stock = self._stock.get(product_id, 0)
         new_quantity = max(0, current_stock - sold)
         self._stock[product_id] = new_quantity
         if new_quantity < 10:
