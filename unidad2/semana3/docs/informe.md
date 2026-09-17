@@ -2,6 +2,8 @@
 
 ## Justificación
 
+En el diseño inicial, `InventoryManager` instanciaba directamente en su constructor y llamaba por nombre a `EmailAlertService`, `AnalyticsDashboard` y `AutoReplenishment`. Cualquier cambio en los canales existentes, o la adición de uno nuevo (como notificaciones push), exigía modificar y recompilar la clase de inventario, violando el principio Open/Closed. Asimismo, la lógica de notificación estaba duplicada entre `update_stock` y `sell_product`. Al refactorizar hacia el patrón Observer mediante el protocolo estructural `StockObserver`, `InventoryManager` delega la entrega de eventos a una colección dinámica de suscriptores sin conocer sus clases concretas ni sus mecanismos de envío, desacoplando por completo el dominio de negocio de la infraestructura de notificaciones.
+
 ## Roles GoF y Variante de Implementación
 
 ### 1. Mapeo de Roles según la Teoría de GoF
@@ -68,6 +70,9 @@ El estado inicial concentra en `InventoryManager` la creación y el uso directo 
 
 
 ### 2. Solución refactorizada: Observer
+**Ver diagrama:** [uml/diagrama_final.md](../uml/diagrama_final.md)
+
+La solución refactorizada invierte la dependencia: `InventoryManager` pasa de componer servicios concretos a mantener una relación de agregación hacia el protocolo estructural `StockObserver`. Los canales de notificación (existentes, de extensión y de resiliencia) implementan independientemente el método `on_low_stock`, permitiendo registrar o remover observadores dinámicamente en tiempo de ejecución sin alterar el gestor de inventario.
 
 ## Código: Situación Inicial
 
@@ -285,8 +290,8 @@ El archivo `main.py` implementa el código de prueba requerido por la consigna (
 
 ## Prueba de resiliencia: observador que falla
 
-La consigna establece como requisito mandatorio:
-> *"Demostrá en código que un observer que falla no detiene a los demás. [...] El test del observer roto es obligatorio en la entrega."* (`docs/consignas.md`, líneas 200 y 202).
+La consigna establece como requisito obligatorio:
+> *"Demostrá en código que un observer que falla no detiene a los demás. [...] El test del observer roto es obligatorio en la entrega."*.
 
 En `main.py`, la prueba se materializa suscribiendo un `BrokenObserver` intercalado entre los observadores estándar:
 1. `EmailAlertObserver`
