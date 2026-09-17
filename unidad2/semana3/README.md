@@ -8,6 +8,8 @@
 
 ---
 
+Pueden ver el repositorio de la asignatura en https://github.com/santiagovOK/UTN-TUPaD-MS2
+
 Resolución de cada una de las consignas puede verse en el archivo [docs/informe.md](docs/informe.md).
 
 Sigo mis trabajos/proyectos con tableros kanban privados en paralelo para aprendizaje, revisión y control interno. Estos están basados en funcion de los [requerimientos](/docs/requerimientos.md) desglozados a partir de las consignas.
@@ -27,7 +29,5 @@ Desde la raíz de este directorio, ejecutá el punto de entrada que en gran part
 ```
 python main.py
 ```
-
-Pueden ver el repositorio de la asignatura en https://github.com/santiagovOK/UTN-TUPaD-MS2
 
 ---

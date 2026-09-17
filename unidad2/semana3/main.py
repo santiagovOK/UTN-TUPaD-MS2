@@ -45,7 +45,7 @@ def main() -> None:
 
     # Demostración de ciclo de vida: desuscripción dinámica de un observador
     print("\n=== Demostración de desuscripción dinámica (unsubscribe) ===")
-    print("Desuscribiendo PushNotificationObserver...")
+    print("Desuscribiendo PushNotificationObserver.")
     manager.unsubscribe(push_obs)
 
     print("Actualizando stock de PROD-002 a 3 unidades (umbral < 10):")
