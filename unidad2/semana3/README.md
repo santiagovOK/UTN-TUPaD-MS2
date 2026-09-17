@@ -16,7 +16,7 @@ Lenguaje base para resolver las consignas: **Python**
 
 - Diagrama UML [final / post-refactorizado](uml/diagrama_final.md)
 
-**También en formato `.png `en uml/**
+**También en formato `.png ` [aquí](/uml/diagrama_final.png)**
 
 ## Cómo ejecutar el proyecto
 
