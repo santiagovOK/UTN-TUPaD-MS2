@@ -1,0 +1,43 @@
+# Python: bytecode, test caches, and coverage output
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local Python environments
+.venv/
+venv/
+ENV/
+
+# Local environment files; keep safe templates in version control
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
+!.env.*.sample
+!.env.*.template
+
+# Java and Gradle generated output
+.gradle/
+.kotlin/
+*.class
+/unidad1/*/build/
+/unidad1/*/out/
+
+# IntelliJ local state and generated project metadata
+*.iml
+*.iws
+*.ipr
+**/.idea/workspace.xml
+**/.idea/shelf/
+**/.idea/httpRequests/
+**/.idea/dbnavigator.xml
+**/.idea/compiler.xml
+**/.idea/modules.xml
+**/.idea/jarRepositories.xml
+**/.idea/libraries/
